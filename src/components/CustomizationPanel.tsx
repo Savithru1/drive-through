@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { MenuItem, CustomizationGroup } from '../data/menu';
 import type { SelectedCustomization } from '../context/CartContext';
 
@@ -7,63 +7,77 @@ interface CustomizationPanelProps {
   onChange: (customizations: SelectedCustomization[], extraCost: number) => void;
 }
 
-export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({ item, onChange }) => {
-  // Store selections by group ID
-  const [selections, setSelections] = useState<{ [groupId: string]: { name: string; price: number }[] }>(() => {
-    const initial: { [groupId: string]: { name: string; price: number }[] } = {};
-    item.customization.forEach(group => {
-      if (group.type === 'select') {
-        // Set first option as default
-        initial[group.id] = [group.options[0]];
-      } else {
-        // Checkboxes start empty
-        initial[group.id] = [];
-      }
-    });
-    return initial;
+// Helper: compute active customizations + extra cost from a selections map
+const computeOutput = (
+  item: MenuItem,
+  selections: { [groupId: string]: { name: string; price: number }[] }
+): { customizations: SelectedCustomization[]; extraCost: number } => {
+  const all: SelectedCustomization[] = Object.keys(selections).map(groupId => {
+    const group = item.customization.find(g => g.id === groupId)!;
+    return {
+      groupId,
+      groupName: group.name,
+      selectedOptions: selections[groupId]
+    };
   });
+  const active = all.filter(c => c.selectedOptions.length > 0);
+  const extraCost = active.reduce(
+    (sum, g) => sum + g.selectedOptions.reduce((s, o) => s + o.price, 0),
+    0
+  );
+  return { customizations: active, extraCost };
+};
 
-  // Whenever selections change, compute total extra cost and notify parent
+// Build initial selections when item changes
+const buildInitial = (item: MenuItem): { [groupId: string]: { name: string; price: number }[] } => {
+  const initial: { [groupId: string]: { name: string; price: number }[] } = {};
+  item.customization.forEach(group => {
+    if (group.type === 'select') {
+      initial[group.id] = [group.options[0]];
+    } else {
+      initial[group.id] = [];
+    }
+  });
+  return initial;
+};
+
+export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({ item, onChange }) => {
+  const [selections, setSelections] = useState<{ [groupId: string]: { name: string; price: number }[] }>(
+    () => buildInitial(item)
+  );
+
+  // Use a ref so we can call onChange in effects without it being a dependency
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; });
+
+  // Re-initialise selections whenever the item itself changes (different food modal opened)
   useEffect(() => {
-    const formattedCustomizations: SelectedCustomization[] = Object.keys(selections).map(groupId => {
-      const group = item.customization.find(g => g.id === groupId)!;
-      return {
-        groupId,
-        groupName: group.name,
-        selectedOptions: selections[groupId]
-      };
-    });
-
-    // Filter out groups with no selection (e.g. empty checkbox groups)
-    const activeCustomizations = formattedCustomizations.filter(c => c.selectedOptions.length > 0);
-
-    const extraCost = activeCustomizations.reduce((sum, group) => {
-      return sum + group.selectedOptions.reduce((groupSum, option) => groupSum + option.price, 0);
-    }, 0);
-
-    onChange(activeCustomizations, extraCost);
-  }, [selections, item, onChange]);
+    const initial = buildInitial(item);
+    setSelections(initial);
+    const { customizations, extraCost } = computeOutput(item, initial);
+    onChangeRef.current(customizations, extraCost);
+  }, [item]);
 
   const handleSelectOption = (group: CustomizationGroup, option: { name: string; price: number }) => {
-    setSelections(prev => ({
-      ...prev,
-      [group.id]: [option]
-    }));
+    setSelections(prev => {
+      const next = { ...prev, [group.id]: [option] };
+      const { customizations, extraCost } = computeOutput(item, next);
+      onChangeRef.current(customizations, extraCost);
+      return next;
+    });
   };
 
   const handleCheckboxOption = (group: CustomizationGroup, option: { name: string; price: number }) => {
     setSelections(prev => {
       const current = prev[group.id] || [];
       const exists = current.some(o => o.name === option.name);
-      
       const updated = exists
         ? current.filter(o => o.name !== option.name)
         : [...current, option];
-
-      return {
-        ...prev,
-        [group.id]: updated
-      };
+      const next = { ...prev, [group.id]: updated };
+      const { customizations, extraCost } = computeOutput(item, next);
+      onChangeRef.current(customizations, extraCost);
+      return next;
     });
   };
 
@@ -107,14 +121,14 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({ item, on
                         <span className="text-sm font-semibold">{option.name}</span>
                       </div>
                       <span className="text-sm font-bold">
-                        {option.price > 0 ? `+₹${option.price}` : 'Free'}
+                        {option.price > 0 ? `+₹${option.price}` : option.price < 0 ? `-₹${Math.abs(option.price)}` : 'Free'}
                       </span>
                     </button>
                   );
                 })}
               </div>
             ) : (
-              /* Checkboxes styled as grid or wrap buttons */
+              /* Checkboxes styled as grid */
               <div className="grid grid-cols-2 gap-2">
                 {group.options.map((option) => {
                   const isSelected = selectedList.some(o => o.name === option.name);
@@ -128,9 +142,9 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({ item, on
                           : 'border-stone-200 hover:bg-stone-50 dark:border-stone-800 dark:hover:bg-stone-900 text-stone-600 dark:text-stone-300'
                       }`}
                     >
-                      <span className="text-xs font-semibold break-all leading-tight pr-1">{option.name}</span>
+                      <span className="text-xs font-semibold break-words leading-tight pr-1">{option.name}</span>
                       <span className="text-xs font-bold whitespace-nowrap text-stone-500 dark:text-stone-400">
-                        {option.price > 0 ? `+₹${option.price}` : 'Free'}
+                        {option.price > 0 ? `+₹${option.price}` : option.price < 0 ? `-₹${Math.abs(option.price)}` : 'Free'}
                       </span>
                     </button>
                   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import type { SelectedCustomization } from '../context/CartContext';
 import { CustomizationPanel } from './CustomizationPanel';
@@ -11,16 +11,14 @@ export const FoodModal: React.FC = () => {
   const [customizations, setCustomizations] = useState<SelectedCustomization[]>([]);
   const [isClosing, setIsClosing] = useState(false);
 
-  // Reset states when item changes
+  // Lock/unlock scroll when modal opens/closes
   useEffect(() => {
     if (selectedItem) {
       setQuantity(1);
-      setExtraCost(0);
-      setCustomizations([]);
       setIsClosing(false);
-      document.body.style.overflow = 'hidden'; // lock scroll
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = ''; // unlock scroll
+      document.body.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
@@ -37,10 +35,10 @@ export const FoodModal: React.FC = () => {
     }, 200); // match animation duration
   };
 
-  const handleCustomizationChange = useCallback((customList: SelectedCustomization[], cost: number) => {
+  const handleCustomizationChange = (customList: SelectedCustomization[], cost: number) => {
     setCustomizations(customList);
     setExtraCost(cost);
-  }, []);
+  };
 
   const handleAddToCart = () => {
     addToCart(selectedItem, customizations, quantity);
