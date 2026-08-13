@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useCart } from '../context/CartContext';
 import type { SelectedCustomization } from '../context/CartContext';
 import { CustomizationPanel } from './CustomizationPanel';
@@ -37,10 +37,10 @@ export const FoodModal: React.FC = () => {
     }, 200); // match animation duration
   };
 
-  const handleCustomizationChange = (customList: SelectedCustomization[], cost: number) => {
+  const handleCustomizationChange = useCallback((customList: SelectedCustomization[], cost: number) => {
     setCustomizations(customList);
     setExtraCost(cost);
-  };
+  }, []);
 
   const handleAddToCart = () => {
     addToCart(selectedItem, customizations, quantity);
