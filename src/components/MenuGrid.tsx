@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { menuItems } from '../data/menu';
 import { MenuCard } from './MenuCard';
@@ -6,6 +6,7 @@ import { HelpCircle, RefreshCw } from 'lucide-react';
 
 export const MenuGrid: React.FC = () => {
   const { selectedCategory, searchQuery, setSearchQuery, setSelectedCategory, setSelectedItem } = useCart();
+  const [vegOnly, setVegOnly] = useState(false);
 
   // Filtering logic
   const filteredItems = menuItems.filter(item => {
@@ -18,13 +19,17 @@ export const MenuGrid: React.FC = () => {
       item.name.toLowerCase().includes(searchLower) ||
       item.description.toLowerCase().includes(searchLower) ||
       item.category.toLowerCase().includes(searchLower);
+
+    // Veg Only filter
+    const matchesVeg = !vegOnly || item.isVegetarian;
       
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesSearch && matchesVeg;
   });
 
   const handleClearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('All');
+    setVegOnly(false);
   };
 
   return (
@@ -44,8 +49,25 @@ export const MenuGrid: React.FC = () => {
             </p>
           </div>
 
-          <div className="text-xs font-semibold text-stone-400 dark:text-stone-500 bg-white dark:bg-stone-900 px-3 py-1.5 rounded-full border border-stone-200/50 dark:border-stone-850">
-            {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} available
+          <div className="flex items-center gap-4">
+            {/* Veg Only Toggle */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <span className="text-xs font-bold text-stone-500 dark:text-stone-400">Veg Only</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={vegOnly}
+                  onChange={(e) => setVegOnly(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="h-6 w-11 rounded-full bg-stone-200 transition-colors peer-checked:bg-green-600 dark:bg-stone-850" />
+                <div className="absolute top-[2px] left-[2px] h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-full shadow-xs" />
+              </div>
+            </label>
+
+            <div className="text-xs font-semibold text-stone-400 dark:text-stone-500 bg-white dark:bg-stone-900 px-3 py-1.5 rounded-full border border-stone-200/50 dark:border-stone-850">
+              {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} available
+            </div>
           </div>
         </div>
 
