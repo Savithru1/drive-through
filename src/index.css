@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #D84315; /* Warm deep orange-red */
+  --color-primary-hover: #BF360C;
+  --color-secondary: #FFB300; /* Warm golden yellow */
+  --color-secondary-hover: #FFA000;
+  
+  --color-cream: #FAF7F2; /* Soft cream background */
+  --color-charcoal: #1C1917; /* Slate-stone deep dark gray text */
+  --color-dark-bg: #121212; /* Premium dark mode background */
+  --color-dark-card: #1A1A1A; /* Dark mode card color */
+  --color-dark-border: #2C2C2C;
+  
+  --font-display: 'Outfit', 'Inter', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  
+  --animate-cart-bounce: cart-bounce 0.4s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+}
+
+@keyframes cart-bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes slide-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+html, body {
+  font-family: var(--font-sans);
+  background-color: var(--color-cream);
+  color: var(--color-charcoal);
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom scrollbars for clean UI */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Base styles for dark mode */
+.dark body {
+  background-color: var(--color-dark-bg);
+  color: #F3F4F6;
+}
+
+/* Smooth layout animations */
+.transition-theme {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
+}
